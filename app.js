@@ -54,7 +54,7 @@
   // so pick by quality instead of taking the first en-GB one. The learner can choose a voice in the footer.
   var voicePref = store.get("voice", "");   // voiceURI, "" = automatic
   var voiceRate = store.get("voiceRate", 0.85);
-  var ODD_VOICE = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Novelty/i;
+  var ODD_VOICE = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Eddy|Flo\b|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Novelty/i;
   function englishVoices() { return canSpeak ? speechSynthesis.getVoices().filter(function (v) { return /^en[-_]/i.test(v.lang); }) : []; }
   function voiceScore(v) {
     var s = 0;
