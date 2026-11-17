@@ -984,6 +984,10 @@
     } });
     add(footer, renderSyncBox());
     add(footer, renderVoiceBox());
+    // version = when the site was last published (to check a phone is on the newest one)
+    var b = builtAt ? new Date(builtAt) : null;
+    if (b && !isNaN(b)) add(footer, el("p", { class: "muted version" }, "版本 Version：" + ymd(b) + " " + b.toTimeString().slice(0, 5) +
+      "（最后一次更新网站的时间 last update）"));
     add(footer, el("details", { class: "progress-box" },
       el("summary", null, "⚙ Progress 学习进度"),
       el("p", null, gh.token ? "进度会通过「☁ 同步」自动和你的其他设备合在一起。也可以导出一份备份。Progress syncs with your other devices."
@@ -1258,7 +1262,9 @@
   }
 
   // ---------- start ----------
+  var builtAt = null;
   function init(data) {
+    builtAt = data.built || null;
     days = (data.days || []).slice().sort(function (a, b) { return a.id < b.id ? 1 : -1; }); // newest first
     var seen = {};
     days.forEach(function (d) { d.words.forEach(function (w) { var k = key(w); if (!seen[k]) { seen[k] = 1; allWords.push(w); } }); });
