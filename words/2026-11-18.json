@@ -1,0 +1,126 @@
+{
+  "date": "2026-11-18",
+  "title": "第4组 Set 4",
+  "words": [
+    {
+      "en": "ahead",
+      "phonetic": "/əˈhed/",
+      "pos": "adv.",
+      "zh": "向前；提前；（go ahead）进行",
+      "sentence": "Go ahead and start the meeting without me.",
+      "sentence_zh": "你们先开会吧，不用等我。"
+    },
+    {
+      "en": "authority",
+      "phonetic": "/ɔːˈθɒrəti/",
+      "pos": "n.",
+      "zh": "当局；权威",
+      "sentence": "The local authority fixed the road last week.",
+      "sentence_zh": "地方政府上周修好了这条路。"
+    },
+    {
+      "en": "automatic",
+      "phonetic": "/ˌɔːtəˈmætɪk/",
+      "pos": "adj.",
+      "zh": "自动的",
+      "sentence": "The door is automatic, so it opens by itself.",
+      "sentence_zh": "这扇门是自动的，会自己打开。"
+    },
+    {
+      "en": "capacity",
+      "phonetic": "/kəˈpæsəti/",
+      "pos": "n.",
+      "zh": "能力；容量",
+      "sentence": "The stadium has a capacity of 80,000 people.",
+      "sentence_zh": "这座体育场能容纳八万人。"
+    },
+    {
+      "en": "chief",
+      "phonetic": "/tʃiːf/",
+      "pos": "adj./n.",
+      "zh": "首席的；首领",
+      "sentence": "She is the chief engineer of the new project.",
+      "sentence_zh": "她是这个新项目的首席工程师。"
+    },
+    {
+      "en": "cite",
+      "phonetic": "/saɪt/",
+      "pos": "v.",
+      "zh": "引用；举出（理由）",
+      "sentence": "He cited two studies to support his idea.",
+      "sentence_zh": "他引用了两项研究来支持他的观点。"
+    },
+    {
+      "en": "degree",
+      "phonetic": "/dɪˈɡriː/",
+      "pos": "n.",
+      "zh": "程度；学位",
+      "sentence": "Water boils at 100 degrees at sea level, but not high up.",
+      "sentence_zh": "水在海平面100度沸腾，在高处则不然。"
+    },
+    {
+      "en": "dismiss",
+      "phonetic": "/dɪsˈmɪs/",
+      "pos": "v.",
+      "zh": "不予理会；解雇",
+      "sentence": "The teacher dismissed the class ten minutes early.",
+      "sentence_zh": "老师提前十分钟下了课。"
+    },
+    {
+      "en": "inequality",
+      "phonetic": "/ˌɪnɪˈkwɒləti/",
+      "pos": "n.",
+      "zh": "不平等",
+      "sentence": "The report shows a growing inequality in pay.",
+      "sentence_zh": "报告显示薪酬不平等在扩大。"
+    },
+    {
+      "en": "lifestyle",
+      "phonetic": "/ˈlaɪfstaɪl/",
+      "pos": "n.",
+      "zh": "生活方式",
+      "sentence": "A healthy lifestyle includes exercise and good sleep.",
+      "sentence_zh": "健康的生活方式包括锻炼和好的睡眠。"
+    },
+    {
+      "en": "manufacture",
+      "phonetic": "/ˌmænjʊˈfæktʃə/",
+      "pos": "v./n.",
+      "zh": "制造；生产",
+      "sentence": "This factory manufactures parts for electric cars all over the world.",
+      "sentence_zh": "这家工厂为全世界的电动汽车生产零件。"
+    },
+    {
+      "en": "participant",
+      "phonetic": "/pɑːˈtɪsəpənt/",
+      "pos": "n.",
+      "zh": "参与者",
+      "sentence": "Each participant in the study received a small gift at the end.",
+      "sentence_zh": "研究里的每位参与者最后都收到了一份小礼物。"
+    },
+    {
+      "en": "prospect",
+      "phonetic": "/ˈprɒspekt/",
+      "pos": "n.",
+      "zh": "可能性；前景",
+      "sentence": "There is little prospect of rain this week.",
+      "sentence_zh": "这周下雨的可能性很小。"
+    },
+    {
+      "en": "requirement",
+      "phonetic": "/rɪˈkwaɪəmənt/",
+      "pos": "n.",
+      "zh": "需求；要求",
+      "sentence": "English is a basic requirement for this job.",
+      "sentence_zh": "英语是这份工作的基本要求。"
+    },
+    {
+      "en": "seek",
+      "phonetic": "/siːk/",
+      "pos": "v.",
+      "zh": "寻求；设法",
+      "sentence": "Birds seek warm places when the cold winter comes each year.",
+      "sentence_zh": "每年寒冬来临时，鸟类会寻找温暖的地方。"
+    }
+  ]
+}
