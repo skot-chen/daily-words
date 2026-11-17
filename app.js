@@ -74,35 +74,55 @@
     if (result === "good") { box = Math.min(MAX_BOX, (cur.box || 0) + 1); due = addDays(t, INTERVALS[box]); }
     else if (result === "unsure") { box = Math.max(1, cur.box || 0); due = addDays(t, 1); }
     else { box = 0; due = t; }
-    srs[k] = { box: box, due: due, last: t, first: cur.first || t };
+    srs[k] = { box: box, due: due, last: t, first: cur.first || t, ts: Date.now() };
     store.set("srs", srs);
     logEvent(k, result, info || {});
+    progressChanged();
   }
   function isDue(w) { var s = srs[key(w)]; return !!s && s.due <= today(); }
 
   // ---------- practice history (for summaries) ----------
   // log[date] = { m: {write: n, listen: n, cards: n},
   //               w: { word: {o: spelled right, x: spelled wrong, c: knew (cards), f: forgot, u: unsure, a: [wrong spellings]} } }
-  var log = store.get("log", {});
+  // myLog = this device's own history (synced as is); log = this device + other devices added together (for summaries).
+  var myLog = store.get("log", {});
+  var otherLogs = store.get("otherLogs", {});
+  var log = {};
+  function mergeLogInto(t, s) {
+    Object.keys(s || {}).forEach(function (d) {
+      var sd = s[d], td = t[d] || (t[d] = { m: {}, w: {} });
+      Object.keys(sd.m || {}).forEach(function (m) { td.m[m] = (td.m[m] || 0) + sd.m[m]; });
+      Object.keys(sd.w || {}).forEach(function (k) {
+        var se = sd.w[k], te = td.w[k] || (td.w[k] = {});
+        Object.keys(se).forEach(function (f) { if (f === "a") te.a = (te.a || []).concat(se.a).slice(-5); else te[f] = (te[f] || 0) + se[f]; });
+      });
+    });
+  }
+  function rebuildLog() { log = {}; mergeLogInto(log, myLog); Object.keys(otherLogs).forEach(function (id) { mergeLogInto(log, otherLogs[id]); }); }
+  rebuildLog();
   function logEvent(k, result, info) {
     var t = today(), m = info.mode || "write";
-    var day = log[t] || (log[t] = { m: {}, w: {} });
+    var day = myLog[t] || (myLog[t] = { m: {}, w: {} });
     day.m[m] = (day.m[m] || 0) + 1;
     var e = day.w[k] || (day.w[k] = {});
     var f = m === "cards" ? (result === "good" ? "c" : result === "unsure" ? "u" : "f") : (result === "good" ? "o" : "x");
     e[f] = (e[f] || 0) + 1;
     if (f === "x" && info.answer != null) { e.a = (e.a || []).concat(norm(info.answer)).slice(-5); }
     var cutoff = addDays(t, -400);
-    Object.keys(log).forEach(function (d) { if (d < cutoff) delete log[d]; });
-    store.set("log", log);
+    Object.keys(myLog).forEach(function (d) { if (d < cutoff) delete myLog[d]; });
+    store.set("log", myLog);
+    rebuildLog();
   }
 
   // ---------- favourites ----------
   var fav = store.get("fav", {});
+  var favDel = store.get("favDel", {}); // key -> when it was un-favourited (so other devices remove it too)
   function isFav(w) { return !!fav[key(w)]; }
   function toggleFav(w) {
-    if (isFav(w)) delete fav[key(w)]; else fav[key(w)] = today();
-    store.set("fav", fav);
+    var k = key(w);
+    if (isFav(w)) { delete fav[k]; favDel[k] = Date.now(); } else { fav[k] = Date.now(); delete favDel[k]; }
+    store.set("fav", fav); store.set("favDel", favDel);
+    progressChanged();
   }
   function favBtn(w, compact) {
     function label() { return isFav(w) ? (compact ? "⭐" : "⭐ Saved 已收藏") : (compact ? "☆" : "☆ Save 收藏"); }
@@ -252,6 +272,114 @@
   }
   window.addEventListener("online", function () { if (pendingKeys().length) syncNotes(); });
 
+
+  // ---------- ☁ learning records sync (progress, favourites, history) ----------
+  // Private repo <REPO>-data, one file per device: progress/<deviceId>.json = { srs, fav, favDel, log (this device only) }.
+  // Every device reads the other devices' files: srs and favourites → newest change wins; history → added together.
+  var DATA_REPO = REPO + "-data";
+  var deviceId = store.get("deviceId", "") || (function () { var id = Math.random().toString(36).slice(2, 10); store.set("deviceId", id); return id; })();
+  var others = store.get("others", {}); // deviceId -> { sha, name, updated }
+  var prog = { busy: false, msg: "", timer: null };
+  function deviceName() {
+    var u = navigator.userAgent;
+    return /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? "Android" : /Mac/.test(u) ? "Mac" : /Windows/.test(u) ? "Windows" : "Browser";
+  }
+  function ghApi(repo, path, method, body) {
+    return fetch("https://api.github.com/repos/" + repo + path, { method: method || "GET", cache: "no-store",
+      headers: { Authorization: "Bearer " + gh.token, Accept: "application/vnd.github+json" },
+      body: body ? JSON.stringify(body) : undefined });
+  }
+  function msOf(v) { return typeof v === "number" ? v : (Date.parse(v) || 0); }
+  function srsTs(e) { return (e && (e.ts || Date.parse(e.last || ""))) || 0; }
+  function mergeRemote(d) {
+    var changed = false;
+    Object.keys(d.srs || {}).forEach(function (k) {
+      if (srsTs(d.srs[k]) > srsTs(srs[k])) { srs[k] = d.srs[k]; changed = true; }
+    });
+    var rf = d.fav || {}, rd = d.favDel || {};
+    Object.keys(rf).forEach(function (k) {
+      if (msOf(rf[k]) > Math.max(msOf(fav[k] || 0), favDel[k] || 0)) { fav[k] = rf[k]; delete favDel[k]; changed = true; }
+    });
+    Object.keys(rd).forEach(function (k) {
+      if (rd[k] > Math.max(msOf(fav[k] || 0), favDel[k] || 0)) { if (fav[k]) changed = true; delete fav[k]; favDel[k] = rd[k]; }
+    });
+    return changed;
+  }
+  function hashStr(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) | 0; return String(h); }
+  function devicesText() {
+    var ids = Object.keys(others);
+    return "这台设备 This device：" + deviceName() + (ids.length ? "　· 其他设备 Other devices：" + ids.map(function (id) {
+      var o = others[id]; return o.name + "（" + String(o.updated).slice(5, 10) + " 更新）"; }).join("、") : "　· 还没有其他设备同步过");
+  }
+  function setProgMsg(m) { prog.msg = m; var x = document.getElementById("prog-msg"); if (x) x.textContent = m; }
+  function progError(e) {
+    var s = e && e.status;
+    if (s === 401) return "✗ 钥匙无效或已过期 Token invalid or expired.";
+    if (s === 403 || s === 404) return "✗ 学习记录没同步：钥匙还没有 " + DATA_REPO + " 的权限。到 GitHub 钥匙设置里把这个仓库也勾上（Contents: Read and write）。";
+    return "✗ 学习记录同步失败（网络？）稍后会再试。" + (s || "");
+  }
+  function progressChanged() {
+    if (!gh.token) return;
+    clearTimeout(prog.timer);
+    prog.timer = setTimeout(function () { prog.timer = null; syncProgress(); }, 15000);
+  }
+  function syncProgress(manual, retry) {
+    if (!gh.token || prog.busy) return Promise.resolve();
+    clearTimeout(prog.timer); prog.timer = null;
+    prog.busy = true; setProgMsg("⏳ 正在同步学习记录… Syncing records…");
+    var mySha = null, changed = false;
+    return ghApi(DATA_REPO, "/contents/progress").then(function (r) {
+      if (r.status === 404) {
+        // 404 = folder not created yet, OR no access to the repo: tell them apart
+        return ghApi(DATA_REPO, "").then(function (r2) { if (!r2.ok) throw r2; return []; });
+      }
+      if (!r.ok) throw r;
+      return r.json();
+    }).then(function (list) {
+      var seen = {}, jobs = [];
+      (Array.isArray(list) ? list : []).forEach(function (f) {
+        if (!/\.json$/.test(f.name)) return;
+        var id = f.name.replace(/\.json$/, "");
+        if (id === deviceId) { mySha = f.sha; return; }
+        seen[id] = 1;
+        if (others[id] && others[id].sha === f.sha && otherLogs[id]) return; // unchanged since last time
+        jobs.push(ghApi(DATA_REPO, "/contents/" + f.path).then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function (j) {
+          var d = JSON.parse(b64d(j.content));
+          mergeRemote(d);
+          otherLogs[id] = d.log || {};
+          others[id] = { sha: f.sha, name: d.name || "?", updated: d.updated || "" };
+          changed = true;
+        }));
+      });
+      Object.keys(others).forEach(function (id) { if (!seen[id]) { delete others[id]; delete otherLogs[id]; changed = true; } });
+      return Promise.all(jobs);
+    }).then(function () {
+      if (changed) {
+        store.set("srs", srs); store.set("fav", fav); store.set("favDel", favDel);
+        store.set("otherLogs", otherLogs); store.set("others", others); rebuildLog();
+      }
+      var h = hashStr(JSON.stringify([srs, fav, favDel, myLog]));
+      if (mySha && h === store.get("lastUp", "")) return null; // nothing new on this device
+      var body = { version: 1, device: deviceId, name: deviceName(), updated: new Date().toISOString(), srs: srs, fav: fav, favDel: favDel, log: myLog };
+      return ghApi(DATA_REPO, "/contents/progress/" + deviceId + ".json", "PUT", { message: "Records from " + deviceName(),
+        content: b64e(JSON.stringify(body)), sha: mySha || undefined }).then(function (r) { if (!r.ok) throw r; store.set("lastUp", h); });
+    }).then(function () {
+      prog.busy = false;
+      setProgMsg("✓ 学习记录已同步 Records synced " + new Date().toTimeString().slice(0, 5) + " · 共 " + (Object.keys(others).length + 1) + " 台设备");
+      var dv = document.getElementById("devices"); if (dv) dv.textContent = devicesText();
+      if (changed) { refreshHeader(); if (manual || !quiz) render(); }
+    }).catch(function (e) {
+      prog.busy = false;
+      if (e && (e.status === 409 || e.status === 422) && !retry) return syncProgress(manual, true);
+      setProgMsg(progError(e));
+    });
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (!gh.token) return;
+    if (document.visibilityState === "hidden" && prog.timer) syncProgress();      // leaving: upload now
+    else if (document.visibilityState === "visible") syncProgress();              // back: fetch other devices' records
+  });
+
   // The sync settings are behind a password. Only a slow PBKDF2 hash of it is in this (public) code.
   // This keeps other people using the same device out of the settings; notes still sync in the background.
   var SYNC_PW_HASH = "a1e4e90188eb7503fc72b3bbe3bf79cc9539fde5f646e709731e724b25110555";
@@ -278,7 +406,7 @@
         });
       }
       return el("details", { class: "progress-box" },
-        el("summary", null, "☁ 笔记同步 Notes sync 🔒" + (pendingKeys().length ? "（⏳ " + pendingKeys().length + " 条待同步）" : "")),
+        el("summary", null, "☁ 同步 Sync 🔒" + (pendingKeys().length ? "（⏳ " + pendingKeys().length + " 条待同步）" : "")),
         el("p", null, "输入密码才能打开同步设置。Enter the password to open the sync settings."),
         el("form", { class: "tools", onsubmit: function (e) { e.preventDefault(); tryUnlock(); } }, pwIn,
           el("button", { class: "btn primary", type: "submit" }, "🔓 解锁 Unlock")),
@@ -288,13 +416,16 @@
       "aria-label": "GitHub token 钥匙" });
     var local = Object.keys(notes).filter(function (k) { return hasText(notes[k]); }).length;
     return el("details", { class: "progress-box" },
-      el("summary", null, "☁ 笔记同步 Notes sync" + (pendingKeys().length ? "（⏳ " + pendingKeys().length + " 条待同步）" : "")),
+      el("summary", null, "☁ 同步 Sync（学习记录 + 笔记）" + (pendingKeys().length ? "（⏳ " + pendingKeys().length + " 条待同步）" : "")),
       el("p", null, "勾选「同步到 GitHub」的笔记会保存到仓库 " + REPO + " 的 " + NOTES_PATH + "，换手机或电脑打开网站也能看到。" +
         "没勾选的只存在这个浏览器里。现在本机有 " + local + " 条笔记。"),
+      el("p", null, "📊 学习记录（进度、复习时间、收藏、错词、总结）会自动保存到你的私有仓库 " + DATA_REPO + "（只有你能看到）。" +
+        "每台设备都要连接钥匙，记录会合在一起：手机练的，电脑上也能看到。"),
+      el("p", { id: "devices" }, devicesText()),
       gh.token ? [
         el("p", null, "✓ 已连接 GitHub。Connected."),
         el("div", { class: "tools" },
-          el("button", { class: "btn primary", type: "button", onclick: function () { syncNotes(true); } }, "🔄 现在同步 Sync now"),
+          el("button", { class: "btn primary", type: "button", onclick: function () { syncNotes(true); syncProgress(true); } }, "🔄 现在同步 Sync now"),
           el("button", { class: "btn", type: "button", onclick: function () {
             if (!confirm("在这个浏览器里删掉钥匙？笔记不会被删除。Forget the token on this device?")) return;
             gh.token = ""; store.set("ghToken", ""); setSyncMsg(""); renderFooter(); render();
@@ -302,7 +433,7 @@
       ] : [
         el("p", null, "第一次使用（每台设备做一次）：① 打开 ",
           el("a", { href: "https://github.com/settings/personal-access-tokens/new", target: "_blank", rel: "noopener" }, "GitHub → 新建钥匙 (fine-grained token)"),
-          "；② Repository access 选 Only select repositories → " + REPO + "；③ Permissions → Contents 选 Read and write；④ 生成后复制，粘贴到下面，点「连接」。" +
+          "；② Repository access 选 Only select repositories → 勾上 " + REPO + " 和 " + DATA_REPO + " 两个；③ Permissions → Contents 选 Read and write；④ 生成后复制，粘贴到下面，点「连接」。" +
           "钥匙只保存在这个浏览器里，不会上传。"),
         el("div", { class: "tools" }, tokenIn,
           el("button", { class: "btn primary", type: "button", onclick: function () {
@@ -310,11 +441,12 @@
             gh.token = t; setSyncMsg("⏳ 检查钥匙… Checking…");
             ghFetch("").then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function (j) {
               if (!j.permissions || !j.permissions.push) throw { status: 403 };
-              store.set("ghToken", t); renderFooter(); syncNotes(true);
+              store.set("ghToken", t); renderFooter(); syncNotes(true); syncProgress(true);
             }).catch(function (e) { gh.token = ""; setSyncMsg(ghError(e)); });
           } }, "🔗 连接 Connect"))
       ],
       el("p", { class: "muted", id: "sync-msg" }, gh.msg),
+      el("p", { class: "muted", id: "prog-msg" }, prog.msg),
       el("button", { class: "btn", type: "button", onclick: function () {
         syncUnlocked = false; try { sessionStorage.removeItem("dw.syncUnlocked"); } catch (e) {} renderFooter();
       } }, "🔒 锁上 Lock"));
@@ -586,14 +718,15 @@
 
   // undo one practice record (used when a Cards rating is changed)
   function unlogEvent(k, result, day) {
-    var d = log[day]; if (!d) return;
+    var d = myLog[day]; if (!d) return;
     var f = result === "good" ? "c" : result === "unsure" ? "u" : "f";
     if (d.m.cards) d.m.cards--;
     var e = d.w[k]; if (!e) return;
     if (e[f]) e[f]--;
     if (!e[f]) delete e[f];
     if (!Object.keys(e).length) delete d.w[k];
-    store.set("log", log);
+    store.set("log", myLog);
+    rebuildLog();
   }
   function changeRating(idx, result) {
     var r = quiz.done[idx], w = quiz.words[idx], k = key(w);
@@ -796,26 +929,26 @@
         var data = JSON.parse(t);
         if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("bad file");
         if (!confirm("Replace progress on this device with the file? 用这个文件替换本设备的进度？")) return;
-        if (data.srs) { srs = data.srs || {}; fav = data.fav || {}; log = data.log || {}; } else { srs = data; } // old files = srs only
+        if (data.srs) { srs = data.srs || {}; fav = data.fav || {}; myLog = data.log || {}; } else { srs = data; } // old files = srs only
         if (data.notes) { notes = data.notes; store.set("notes", notes); }
-        store.set("srs", srs); store.set("fav", fav); store.set("log", log); quiz = null; refreshHeader(); renderFooter(); render();
+        store.set("srs", srs); store.set("fav", fav); store.set("log", myLog); rebuildLog(); progressChanged(); quiz = null; refreshHeader(); renderFooter(); render();
       }).catch(function () { alert("This is not a progress file. 不是进度文件。"); });
     } });
     add(footer, renderSyncBox());
     add(footer, el("details", { class: "progress-box" },
       el("summary", null, "⚙ Progress 学习进度"),
-      el("p", null, "Progress is saved in this browser only (phone and computer are separate). Use Export / Import to move it. " +
-        "进度只保存在这个浏览器里（手机和电脑分开）。可以导出 / 导入来转移。"),
+      el("p", null, gh.token ? "进度会通过「☁ 同步」自动和你的其他设备合在一起。也可以导出一份备份。Progress syncs with your other devices."
+        : "进度现在只保存在这个浏览器里。在上面「☁ 同步」连接 GitHub 钥匙后，手机和电脑的记录会合在一起。也可以导出 / 导入。"),
       el("div", { class: "tools" },
         el("button", { class: "btn", type: "button", onclick: function () {
-          var a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify({ version: 3, srs: srs, fav: fav, log: log, notes: notes })], { type: "application/json" })),
+          var a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify({ version: 3, srs: srs, fav: fav, log: myLog, notes: notes })], { type: "application/json" })),
             download: "daily-words-progress-" + today() + ".json" });
           document.body.append(a); a.click(); a.remove();
         } }, "⬇ Export 导出"),
         el("button", { class: "btn", type: "button", onclick: function () { fileInput.click(); } }, "⬆ Import 导入"),
         el("button", { class: "btn", type: "button", onclick: function () {
           if (!confirm("Delete all progress, favourites and history on this device? (Notes are kept.) 删除本设备的全部进度、收藏和记录？（笔记会保留）")) return;
-          srs = {}; fav = {}; log = {}; store.set("srs", srs); store.set("fav", fav); store.set("log", log); quiz = null; refreshHeader(); render();
+          srs = {}; fav = {}; myLog = {}; store.set("srs", srs); store.set("fav", fav); store.set("log", myLog); rebuildLog(); quiz = null; refreshHeader(); render();
         } }, "Reset 清空"), fileInput)));
   }
 
@@ -1096,6 +1229,7 @@
     renderFooter();
     render();
     syncNotes(); // upload notes saved offline, and fetch notes written on other devices
+    syncProgress(); // learning records: upload this device's, merge the other devices'
   }
 
   // Phone app: lets the site be added to the home screen and open without internet (sw.js).
