@@ -234,3 +234,6 @@ input.token { flex: 1; min-width: 0; font-size: 15px; padding: 8px 10px; border:
   padding: 10px 12px 10px 16px; border-radius: 14px; background: var(--paper); border: 2px solid var(--accent);
   box-shadow: 0 6px 24px rgba(0,0,0,.18); font-size: 15px; }
 .update-bar .btn { flex-shrink: 0; }
+
+/* phones: no double-tap zoom (it zoomed in / jumped when tapping fast); pinch-zoom still works */
+html, body, button, a, input, select, textarea, label { touch-action: manipulation; }

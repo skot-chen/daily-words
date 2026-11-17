@@ -50,16 +50,64 @@
 
   // ---------- speech ----------
   var canSpeak = "speechSynthesis" in window;
+  // Phones (iPhone especially) also list joke / robot voices (Bubbles, Grandpa, Rocko …) as English voices,
+  // so pick by quality instead of taking the first en-GB one. The learner can choose a voice in the footer.
+  var voicePref = store.get("voice", "");   // voiceURI, "" = automatic
+  var voiceRate = store.get("voiceRate", 0.85);
+  var ODD_VOICE = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Novelty/i;
+  function englishVoices() { return canSpeak ? speechSynthesis.getVoices().filter(function (v) { return /^en[-_]/i.test(v.lang); }) : []; }
+  function voiceScore(v) {
+    var s = 0;
+    if (ODD_VOICE.test(v.name)) s -= 100;
+    if (/en[-_]GB/i.test(v.lang)) s += 30; else if (/en[-_]US/i.test(v.lang)) s += 15;
+    if (/Natural|Neural|Premium|Enhanced|Online/i.test(v.name)) s += 25;
+    if (/Google UK English|Daniel|Kate|Serena|Arthur|Martha|Oliver|Stephanie|Sonia|Libby|Ryan|Hazel|George|Susan|Samantha|Karen|Moira/i.test(v.name)) s += 20;
+    if (/compact/i.test(v.name)) s -= 10;
+    return s;
+  }
+  function bestVoice() {
+    var list = englishVoices();
+    var chosen = voicePref && list.find(function (v) { return v.voiceURI === voicePref; });
+    if (chosen) return chosen;
+    return list.slice().sort(function (x, y) { return voiceScore(y) - voiceScore(x); })[0] || null;
+  }
   function speak(text) {
     if (!canSpeak) return;
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    var voices = speechSynthesis.getVoices().filter(function (v) { return /^en[-_]/i.test(v.lang); });
-    var v = voices.find(function (x) { return /en[-_]GB/i.test(x.lang); }) || voices.find(function (x) { return /en[-_]US/i.test(x.lang); }) || voices[0];
+    var v = bestVoice();
     if (v) u.voice = v;
     u.lang = v ? v.lang : "en-GB";
-    u.rate = 0.85;
+    u.rate = voiceRate;
     speechSynthesis.speak(u);
+  }
+  function renderVoiceBox() {
+    if (!canSpeak) return null;
+    var sel = el("select", { "aria-label": "Voice 声音", onchange: function () { voicePref = sel.value; store.set("voice", voicePref); speak("Hello, this is your daily word."); } });
+    function fill() {
+      sel.textContent = "";
+      var list = englishVoices().slice().sort(function (x, y) { return voiceScore(y) - voiceScore(x); });
+      var auto = list[0];
+      sel.append(el("option", { value: "" }, "自动 Auto（推荐）" + (auto ? "：" + auto.name : "")));
+      list.forEach(function (v) {
+        sel.append(el("option", { value: v.voiceURI }, (ODD_VOICE.test(v.name) ? "🤪 " : "") + v.name + " · " + v.lang));
+      });
+      sel.value = list.some(function (v) { return v.voiceURI === voicePref; }) ? voicePref : "";
+    }
+    fill();
+    speechSynthesis.addEventListener("voiceschanged", fill);
+    return el("details", { class: "progress-box" },
+      el("summary", null, "🔊 发音 Voice"),
+      el("p", null, "声音来自手机 / 电脑自带的朗读引擎，所以不同设备听起来不一样。选一个你觉得最自然的。" +
+        "（iPhone 可以在「设置 → 辅助功能 → 朗读内容 → 声音 → 英语」下载「增强 / 高级」声音，听起来更自然。）"),
+      el("label", { class: "mf" }, "声音 Voice", sel),
+      el("div", { class: "tools seg4" }, [[0.7, "🐢 慢"], [0.85, "正常"], [1, "快一点"]].map(function (r) {
+        return el("button", { class: "btn", type: "button", "aria-pressed": String(voiceRate === r[0]), onclick: function (e) {
+          voiceRate = r[0]; store.set("voiceRate", voiceRate);
+          e.target.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === e.target)); });
+          speak("Hello, this is your daily word.");
+        } }, r[1]);
+      }).concat(el("button", { class: "btn", type: "button", onclick: function () { speak("Hello, this is your daily word."); } }, "▶ 试听"))));
   }
   if (canSpeak) speechSynthesis.getVoices();
 
@@ -935,6 +983,7 @@
       }).catch(function () { alert("This is not a progress file. 不是进度文件。"); });
     } });
     add(footer, renderSyncBox());
+    add(footer, renderVoiceBox());
     add(footer, el("details", { class: "progress-box" },
       el("summary", null, "⚙ Progress 学习进度"),
       el("p", null, gh.token ? "进度会通过「☁ 同步」自动和你的其他设备合在一起。也可以导出一份备份。Progress syncs with your other devices."
