@@ -252,7 +252,38 @@
   }
   window.addEventListener("online", function () { if (pendingKeys().length) syncNotes(); });
 
+  // The sync settings are behind a password. Only a slow PBKDF2 hash of it is in this (public) code.
+  // This keeps other people using the same device out of the settings; notes still sync in the background.
+  var SYNC_PW_HASH = "a1e4e90188eb7503fc72b3bbe3bf79cc9539fde5f646e709731e724b25110555";
+  var syncUnlocked = (function () { try { return sessionStorage.getItem("dw.syncUnlocked") === "1"; } catch (e) { return false; } })();
+  function checkSyncPw(pw) {
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]).then(function (k) {
+      return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode("daily-words-sync"), iterations: 150000 }, k, 256);
+    }).then(function (bits) {
+      return Array.from(new Uint8Array(bits)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("") === SYNC_PW_HASH;
+    });
+  }
   function renderSyncBox() {
+    if (!syncUnlocked) {
+      var pwIn = el("input", { type: "password", class: "token", autocomplete: "off", placeholder: "密码 Password", "aria-label": "Password 密码" });
+      var msg = el("p", { class: "muted" });
+      function tryUnlock() {
+        msg.textContent = "⏳ 检查中… Checking…";
+        checkSyncPw(pwIn.value).then(function (ok) {
+          if (!ok) { msg.textContent = "✗ 密码不对 Wrong password"; pwIn.value = ""; pwIn.focus(); return; }
+          syncUnlocked = true;
+          try { sessionStorage.setItem("dw.syncUnlocked", "1"); } catch (e) {}
+          renderFooter(); var d = footer.querySelector("details"); if (d) d.open = true;
+        });
+      }
+      return el("details", { class: "progress-box" },
+        el("summary", null, "☁ 笔记同步 Notes sync 🔒" + (pendingKeys().length ? "（⏳ " + pendingKeys().length + " 条待同步）" : "")),
+        el("p", null, "输入密码才能打开同步设置。Enter the password to open the sync settings."),
+        el("form", { class: "tools", onsubmit: function (e) { e.preventDefault(); tryUnlock(); } }, pwIn,
+          el("button", { class: "btn primary", type: "submit" }, "🔓 解锁 Unlock")),
+        msg);
+    }
     var tokenIn = el("input", { type: "password", class: "token", autocomplete: "off", placeholder: "github_pat_…",
       "aria-label": "GitHub token 钥匙" });
     var local = Object.keys(notes).filter(function (k) { return hasText(notes[k]); }).length;
@@ -283,7 +314,10 @@
             }).catch(function (e) { gh.token = ""; setSyncMsg(ghError(e)); });
           } }, "🔗 连接 Connect"))
       ],
-      el("p", { class: "muted", id: "sync-msg" }, gh.msg));
+      el("p", { class: "muted", id: "sync-msg" }, gh.msg),
+      el("button", { class: "btn", type: "button", onclick: function () {
+        syncUnlocked = false; try { sessionStorage.removeItem("dw.syncUnlocked"); } catch (e) {} renderFooter();
+      } }, "🔒 锁上 Lock"));
   }
 
   // ---------- state ----------
