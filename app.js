@@ -1235,6 +1235,28 @@
   // Phone app: lets the site be added to the home screen and open without internet (sw.js).
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(function () {});
 
+  // ---------- 🆕 new version check ----------
+  // build.mjs puts ?v=<hash> on app.js / style.css. If the live page has other hashes, this tab is an old version:
+  // show a bar with an Update button (old versions may lack features, e.g. syncing learning records).
+  function versionsIn(html) { return (html.match(/(?:app\.js|style\.css)\?v=[a-f0-9]+/g) || []).sort().join(" "); }
+  var myVersion = versionsIn(document.documentElement.innerHTML);
+  var updateShown = false;
+  function checkUpdate() {
+    if (!myVersion || updateShown || !navigator.onLine) return;
+    fetch("./?update-check=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (html) {
+      var live = versionsIn(html);
+      if (!live || live === myVersion || updateShown) return;
+      updateShown = true;
+      if (prog.timer) syncProgress(); // save this device's records first
+      document.body.append(el("div", { class: "update-bar noprint", role: "alert" },
+        el("span", null, "🆕 有新版本 New version — 点「更新」用最新功能。"),
+        el("button", { class: "btn primary", type: "button", onclick: function () { location.reload(); } }, "🔄 更新 Update")));
+    }).catch(function () {});
+  }
+  setTimeout(checkUpdate, 3000);
+  setInterval(checkUpdate, 10 * 60 * 1000);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") checkUpdate(); });
+
   fetch("data.json", { cache: "no-cache" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(init)
