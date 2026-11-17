@@ -8,7 +8,13 @@
       "pos": "adv.",
       "zh": "向前；提前；（go ahead）进行",
       "sentence": "Go ahead and start the meeting without me.",
-      "sentence_zh": "你们先开会吧，不用等我。"
+      "sentence_zh": "你们先开会吧，不用等我。",
+      "roots": "a-（= on，在…上）+ head（头）→ 在头里 → 向前；提前",
+      "hook": "head 头：走在「头」里就是向前",
+      "family": [
+        "aboard 在船上",
+        "asleep 睡着"
+      ]
     },
     {
       "en": "authority",
@@ -16,7 +22,13 @@
       "pos": "n.",
       "zh": "当局；权威",
       "sentence": "The local authority fixed the road last week.",
-      "sentence_zh": "地方政府上周修好了这条路。"
+      "sentence_zh": "地方政府上周修好了这条路。",
+      "roots": "author（创始人、作者）+ -ity（名词）→ 说了算的人 → 权威；当局",
+      "hook": "author 作者：同一个词根，原意「创始人」",
+      "family": [
+        "author 作者",
+        "authorize 授权"
+      ]
     },
     {
       "en": "automatic",
@@ -24,7 +36,14 @@
       "pos": "adj.",
       "zh": "自动的",
       "sentence": "The door is automatic, so it opens by itself.",
-      "sentence_zh": "这扇门是自动的，会自己打开。"
+      "sentence_zh": "这扇门是自动的，会自己打开。",
+      "roots": "auto-（自己）+ mat（想、愿意）+ -ic（形容词）→ 自己想动就动 → 自动的",
+      "hook": "automobile 汽车：auto（自己）+ mobile（动）",
+      "family": [
+        "automobile 汽车",
+        "autograph 亲笔签名",
+        "automate 使自动化"
+      ]
     },
     {
       "en": "capacity",
@@ -32,7 +51,13 @@
       "pos": "n.",
       "zh": "能力；容量",
       "sentence": "The stadium has a capacity of 80,000 people.",
-      "sentence_zh": "这座体育场能容纳八万人。"
+      "sentence_zh": "这座体育场能容纳八万人。",
+      "roots": "cap（拿、容纳）+ -acity（名词）→ 能装多少 → 容量；能力",
+      "hook": "capable 有能力的：同一个 cap「拿得住」",
+      "family": [
+        "capable 有能力的",
+        "capture 捕获"
+      ]
     },
     {
       "en": "chief",
@@ -40,7 +65,15 @@
       "pos": "adj./n.",
       "zh": "首席的；首领",
       "sentence": "She is the chief engineer of the new project.",
-      "sentence_zh": "她是这个新项目的首席工程师。"
+      "sentence_zh": "她是这个新项目的首席工程师。",
+      "roots": "来自拉丁 caput（头）→ 法语 chief → 头领 → 首领；首席的",
+      "hook": "captain 船长：也来自 caput「头」，船上的头儿",
+      "family": [
+        "captain 船长",
+        "capital 首都",
+        "chef 主厨",
+        "achieve 实现"
+      ]
     },
     {
       "en": "cite",
@@ -48,7 +81,14 @@
       "pos": "v.",
       "zh": "引用；举出（理由）",
       "sentence": "He cited two studies to support his idea.",
-      "sentence_zh": "他引用了两项研究来支持他的观点。"
+      "sentence_zh": "他引用了两项研究来支持他的观点。",
+      "roots": "cit（叫、召唤）→ 把别人的话「叫出来」→ 引用；举出",
+      "hook": "excite 使激动：ex-（出）+ cite（叫）→ 把情绪叫出来",
+      "family": [
+        "excite 使激动",
+        "recite 背诵",
+        "citation 引用"
+      ]
     },
     {
       "en": "degree",
@@ -56,7 +96,14 @@
       "pos": "n.",
       "zh": "程度；学位",
       "sentence": "Water boils at 100 degrees at sea level, but not high up.",
-      "sentence_zh": "水在海平面100度沸腾，在高处则不然。"
+      "sentence_zh": "水在海平面100度沸腾，在高处则不然。",
+      "roots": "de-（向下）+ gree = grad（台阶、等级）→ 一级一级的台阶 → 程度；学位",
+      "hook": "grade 年级、等级：同一个 grad「台阶」",
+      "family": [
+        "grade 等级",
+        "gradual 逐渐的",
+        "graduate 毕业"
+      ]
     },
     {
       "en": "dismiss",
@@ -64,7 +111,14 @@
       "pos": "v.",
       "zh": "不予理会；解雇",
       "sentence": "The teacher dismissed the class ten minutes early.",
-      "sentence_zh": "老师提前十分钟下了课。"
+      "sentence_zh": "老师提前十分钟下了课。",
+      "roots": "dis-（分开）+ miss = mit（送、放走）→ 送走 → 解雇；不予理会",
+      "hook": "mission 任务：同一个 miss「送出去」",
+      "family": [
+        "mission 任务",
+        "missile 导弹",
+        "submit 提交"
+      ]
     },
     {
       "en": "inequality",
@@ -72,7 +126,14 @@
       "pos": "n.",
       "zh": "不平等",
       "sentence": "The report shows a growing inequality in pay.",
-      "sentence_zh": "报告显示薪酬不平等在扩大。"
+      "sentence_zh": "报告显示薪酬不平等在扩大。",
+      "roots": "in-（不）+ equal（相等的）+ -ity（名词）→ 不相等 → 不平等",
+      "hook": "equal 相等的",
+      "family": [
+        "equal 相等的",
+        "equation 方程",
+        "equator 赤道"
+      ]
     },
     {
       "en": "lifestyle",
@@ -80,7 +141,13 @@
       "pos": "n.",
       "zh": "生活方式",
       "sentence": "A healthy lifestyle includes exercise and good sleep.",
-      "sentence_zh": "健康的生活方式包括锻炼和好的睡眠。"
+      "sentence_zh": "健康的生活方式包括锻炼和好的睡眠。",
+      "roots": "life（生活）+ style（样式）→ 生活的样式 → 生活方式（合成词）",
+      "hook": "style 风格、样式",
+      "family": [
+        "lifetime 一生",
+        "stylish 时髦的"
+      ]
     },
     {
       "en": "manufacture",
@@ -88,7 +155,14 @@
       "pos": "v./n.",
       "zh": "制造；生产",
       "sentence": "This factory manufactures parts for electric cars all over the world.",
-      "sentence_zh": "这家工厂为全世界的电动汽车生产零件。"
+      "sentence_zh": "这家工厂为全世界的电动汽车生产零件。",
+      "roots": "manu（手）+ fact（做）+ -ure（名词）→ 用手做 → 制造；生产",
+      "hook": "factory 工厂：同一个 fact「做」；manual 手动的：同一个 manu「手」",
+      "family": [
+        "manual 手动的；手册",
+        "manuscript 手稿",
+        "factory 工厂"
+      ]
     },
     {
       "en": "participant",
@@ -96,7 +170,14 @@
       "pos": "n.",
       "zh": "参与者",
       "sentence": "Each participant in the study received a small gift at the end.",
-      "sentence_zh": "研究里的每位参与者最后都收到了一份小礼物。"
+      "sentence_zh": "研究里的每位参与者最后都收到了一份小礼物。",
+      "roots": "part（部分）+ cip（拿）+ -ant（人）→ 拿一份的人 → 参与者",
+      "hook": "part 部分",
+      "family": [
+        "participate 参加",
+        "particle 颗粒",
+        "anticipate 预期"
+      ]
     },
     {
       "en": "prospect",
@@ -104,7 +185,14 @@
       "pos": "n.",
       "zh": "可能性；前景",
       "sentence": "There is little prospect of rain this week.",
-      "sentence_zh": "这周下雨的可能性很小。"
+      "sentence_zh": "这周下雨的可能性很小。",
+      "roots": "pro-（向前）+ spect（看）→ 往前看到的 → 前景；可能性",
+      "hook": "inspect 检查：in-（往里）+ spect（看）",
+      "family": [
+        "inspect 检查",
+        "expect 期待",
+        "perspective 视角"
+      ]
     },
     {
       "en": "requirement",
@@ -112,7 +200,15 @@
       "pos": "n.",
       "zh": "需求；要求",
       "sentence": "English is a basic requirement for this job.",
-      "sentence_zh": "英语是这份工作的基本要求。"
+      "sentence_zh": "英语是这份工作的基本要求。",
+      "roots": "re-（一再）+ quire（寻求、问）+ -ment（名词）→ 一再要的东西 → 要求；需求",
+      "hook": "question 问题：同一个 que「问、寻求」",
+      "family": [
+        "require 需要",
+        "request 请求",
+        "acquire 获得",
+        "inquire 询问"
+      ]
     },
     {
       "en": "seek",
@@ -120,7 +216,9 @@
       "pos": "v.",
       "zh": "寻求；设法",
       "sentence": "Birds seek warm places when the cold winter comes each year.",
-      "sentence_zh": "每年寒冬来临时，鸟类会寻找温暖的地方。"
+      "sentence_zh": "每年寒冬来临时，鸟类会寻找温暖的地方。",
+      "no_roots": "古英语日常词，没有好用的词根",
+      "mnemonic": "seek 和 see 很像：see（看）+ k → 到处看 → 寻找"
     }
   ]
 }

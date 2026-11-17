@@ -19,8 +19,10 @@ That is the whole job. GitHub Actions validates the file and publishes the websi
    doesn't have it (e.g. phonetic missing → use British IPA like `/ˈwɜːd/`; meaning cut off in the image → write the
    most common meaning and tell the user which word you completed).
 5. Write `sentence` and `sentence_zh` yourself (see "Sentence rules").
-6. Write `roots`, `hook`, `family` yourself when the word has a real, well-known etymology (see "Word-root rules").
-   **Never invent etymology.** If you are not sure, leave those fields out.
+6. **🧩 Roots are required for every word** (the learner relies on them). Write `roots`, `hook`, `family` yourself
+   (see "Word-root rules"). **Never invent etymology.** If a word truly has no usable real root (short Germanic words
+   like seek, harm, crop), write `"no_roots": "reason in Chinese"` instead (optionally plus a `mnemonic`).
+   The build **fails** if a word has none of `roots` / `hook` / `no_roots`.
 7. **Never edit `notes/`.** `notes/notes.json` holds the learner's own notes (my sentence / note / 一句话串记),
    written by the website's "☁ Sync to GitHub" with commits named "Update my notes (N)". If a push is rejected
    because of such a commit, just `git pull --rebase` and push again — your word file and the notes never conflict.
@@ -57,10 +59,14 @@ That is the whole job. GitHub Actions validates the file and publishes the websi
 | `pos` | no | `n.` `v.` `adj.` `adv.` `prep.` `conj.` `phr.` — combine with `/`, e.g. `n./v.` |
 | `sentence` | no (strongly wanted) | Example sentence, see rules below. |
 | `sentence_zh` | no (strongly wanted) | Natural Chinese translation of `sentence`. |
-| `roots` | no (wanted) | 🧩 Real morpheme breakdown in Chinese: `前缀（意思）+ 词根（意思）+ 后缀（意思）→ 字面意思 → 现在的意思`. |
+| `roots` | **yes*** | 🧩 Real morpheme breakdown in Chinese: `前缀（意思）+ 词根（意思）+ 后缀（意思）→ 字面意思 → 现在的意思`. |
 | `hook` | no | 🔗 One **familiar** word (primary/middle-school level) that truly shares the root, + why. Format: `熟词 中文：说明`. |
 | `family` | no | 🌲 List of 2–3 (max 5) **real** same-root words, each `"word 中文"`. |
 | `mnemonic` | no | 💭 Only when there is no usable real root: a memory trick. The site labels it "不是真词源". |
+| `no_roots` | **yes*** | Only when the word has no usable real root: the reason in Chinese, e.g. `"古英语日常词，没有好用的词根"`. Not shown on the site. |
+
+* Every word needs `roots` (with `hook`/`family` when possible) **or** `no_roots`. Most words have a real root — use
+`no_roots` rarely (at most a few per set).
 
 No other fields. Unknown fields are ignored and produce a warning. Shown on the site only after the learner
 answers (so they never give away the spelling).
@@ -101,8 +107,9 @@ If you can run Node, validate first: `node scripts/build.mjs` (prints `OK: …` 
    While it is red the live site keeps the old version, nothing breaks.
 2. About 1 minute later the new set appears at the top of the menu on https://skot-chen.github.io/daily-words/
    (data is at `https://skot-chen.github.io/daily-words/data.json`).
-3. Tell the user (in simple Chinese): the file you added, how many words, any word whose meaning or phonetic you
-   filled in yourself, and which words got no 🧩 roots (and why).
+3. Open the new set on the live site and check that 🧩 词根拆解 shows for the words.
+4. Tell the user (in simple Chinese): the file you added, how many words, any word whose meaning or phonetic you
+   filled in yourself, and which words got `no_roots` (and why).
 
 ## How the site uses the data (for context only)
 `scripts/build.mjs` merges all `words/*.json` into `_site/data.json`. The page has 5 modes — Write (默写),

@@ -13,7 +13,9 @@ const SITE_DIRS = ["icons"];
 
 const FILE_NAME = /^(\d{4}-\d{2}-\d{2})(-\d+)?\.json$/;
 const REQUIRED = ["en", "zh"];
-const OPTIONAL = ["phonetic", "pos", "sentence", "sentence_zh", "roots", "hook", "mnemonic"];
+const OPTIONAL = ["phonetic", "pos", "sentence", "sentence_zh", "roots", "hook", "mnemonic", "no_roots"];
+// From this date on, every word needs 🧩 roots/hook, or "no_roots" with the reason (older files are left as they are).
+const ROOTS_REQUIRED_FROM = "2026-11-18";
 const ALLOWED = new Set([...REQUIRED, ...OPTIONAL, "family"]);
 
 const errors = [];
@@ -43,13 +45,15 @@ for (const f of files) {
       errors.push(`${at}: "family" must be a list of up to 5 strings, e.g. ["novel 新奇的", "renovate 翻新"]`);
     for (const k of Object.keys(w)) if (!ALLOWED.has(k)) warnings.push(`${at}: unknown field "${k}" is ignored`);
     if (typeof w.en !== "string" || !w.en.trim()) return;
+    if (m[1] >= ROOTS_REQUIRED_FROM && !w.roots && !w.hook && !w.no_roots)
+      errors.push(`${at} "${w.en}": 🧩 roots missing – add "roots" (+ "hook", "family"), or "no_roots": "reason" if it has no real root (see AGENTS.md)`);
     if (w.sentence && !new RegExp("\\b" + escRe(w.en.trim()), "i").test(w.sentence))
       warnings.push(`${at}: sentence does not contain "${w.en}" – fill-in-the-blank will not work for it`);
     const key = w.en.trim().toLowerCase();
     if (seen.has(key)) warnings.push(`${at}: "${w.en}" is already in ${seen.get(key)} (progress is shared)`);
     else seen.set(key, f);
     const clean = {};
-    for (const k of ALLOWED) if (typeof w[k] === "string" && w[k].trim()) clean[k] = w[k].trim();
+    for (const k of ALLOWED) if (k !== "no_roots" && typeof w[k] === "string" && w[k].trim()) clean[k] = w[k].trim();
     if (Array.isArray(w.family) && w.family.length) clean.family = w.family.filter((x) => typeof x === "string").map((x) => x.trim());
     words.push(clean);
   });
