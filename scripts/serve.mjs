@@ -10,7 +10,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const site = path.join(root, "_site");
 const port = Number(process.env.PORT) || 8769;
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8" };
+  ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
+  ".png": "image/png", ".webmanifest": "application/manifest+json; charset=utf-8" };
 
 function build() {
   try { execFileSync(process.execPath, [path.join(root, "scripts", "build.mjs")], { stdio: "inherit" }); return true; }

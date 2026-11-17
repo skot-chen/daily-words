@@ -218,3 +218,12 @@ div.step { margin: 2px 0 6px; }
   border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: inherit; resize: vertical; }
 .note-edit textarea:focus { outline: none; border-color: var(--accent); }
 input.token { flex: 1; min-width: 0; font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: inherit; }
+
+/* ---------- phone ---------- */
+/* iPhone zooms into any field under 16px when you tap it; keep fields at 16px on phones. */
+@media (max-width: 520px) {
+  #search, input.token, label.mf select, .note-edit textarea, select { font-size: 16px; }
+  .wrap { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+}
+/* opened from the home screen: no browser bar, so give the top a little room */
+@media (display-mode: standalone) { .wrap { padding-top: calc(12px + env(safe-area-inset-top)); } }

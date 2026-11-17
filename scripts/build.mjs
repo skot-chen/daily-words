@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const wordsDir = path.join(root, "words");
 const outDir = path.join(root, "_site");
-const SITE_FILES = ["index.html", "app.js", "style.css"];
+const SITE_FILES = ["index.html", "app.js", "style.css", "sw.js", "manifest.webmanifest"];
+const SITE_DIRS = ["icons"];
 
 const FILE_NAME = /^(\d{4}-\d{2}-\d{2})(-\d+)?\.json$/;
 const REQUIRED = ["en", "zh"];
@@ -82,6 +83,7 @@ if (errors.length) {
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir);
 for (const f of SITE_FILES) fs.copyFileSync(path.join(root, f), path.join(outDir, f));
+for (const d of SITE_DIRS) fs.cpSync(path.join(root, d), path.join(outDir, d), { recursive: true });
 // Cache-busting: index.html links style.css / app.js with ?v=<content hash>, so browsers load new versions at once.
 let html = fs.readFileSync(path.join(outDir, "index.html"), "utf8");
 for (const f of ["style.css", "app.js"]) {

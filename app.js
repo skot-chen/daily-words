@@ -1098,6 +1098,9 @@
     syncNotes(); // upload notes saved offline, and fetch notes written on other devices
   }
 
+  // Phone app: lets the site be added to the home screen and open without internet (sw.js).
+  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(function () {});
+
   fetch("data.json", { cache: "no-cache" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(init)

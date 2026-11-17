@@ -29,3 +29,9 @@ AI 会新建一个 `words/日期.json` 文件。大约 1 分钟后，网站上�
 
 ## For developers / AI
 See [AGENTS.md](AGENTS.md). `npm run check` validates + builds, `npm run dev` previews locally. No dependencies.
+
+## 📱 放到手机桌面（像 App 一样用）
+- **iPhone（Safari）**：打开网站 → 点下方「分享」按钮 → 「添加到主屏幕」。
+- **安卓（Chrome）**：打开网站 → 右上角 ⋮ → 「添加到主屏幕 / 安装应用」。
+
+从桌面图标打开是全屏的，没有网络时也能打开上次看过的单词（进度和笔记都在手机里）。
