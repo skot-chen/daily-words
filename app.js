@@ -195,7 +195,17 @@
     return h && p ? h[1] + "/" + p : "skot-chen/daily-words";
   })();
   var NOTES_PATH = "notes/notes.json";
-  function hasText(n) { return !!(n && (n.s || n.n || n.c)); }
+  function hasText(n) { return !!(n && (n.s || n.n || n.c || n.q)); }
+
+  // ❓ questions for AI: the learner writes n.q in a note; an AI answers in answers/answers.json (see AGENTS.md),
+  // which the build puts into data.json as "answers": { word: [ { q, a, date } ] }.
+  var answers = {};
+  function answersFor(k) { return Array.isArray(answers[k]) ? answers[k] : []; }
+  function isAnswered(k, q) { return answersFor(k).some(function (x) { return norm(x.q || "") === norm(q); }); }
+  function openQuestions() {
+    return noteKeys().map(function (k) { var n = noteByKey(k); return { k: k, q: n && n.q, n: n }; })
+      .filter(function (x) { return x.q && !isAnswered(x.k, x.q); });
+  }
   function noteByKey(k) {
     var l = notes[k], r = remoteNotes[k];
     if (l && r) return (r.t || "") > (l.t || "") ? r : l; // newer one wins (edited on another device)
@@ -220,13 +230,18 @@
     return l.synced === l.t ? "☁ 已同步 Synced" : "⏳ 待同步 Not synced yet";
   }
   function noteBox(w) {
-    var n = noteOf(w), others = chainsFor(w);
-    if (!n && !others.length) return null;
+    var n = noteOf(w), others = chainsFor(w), ans = answersFor(key(w));
+    if (!n && !others.length && !ans.length) return null;
     return el("div", { class: "note" },
       el("div", { class: "note-h" }, "📝 我的笔记 My notes", n ? el("small", { "data-note": key(w) }, noteStatus(key(w))) : null),
       n && n.s ? el("div", null, el("span", { class: "k" }, "✍ 造句 "), boldWords(n.s)) : null,
       n && n.n ? el("div", null, el("span", { class: "k" }, "💬 备注 "), n.n) : null,
       n && n.c ? el("div", null, el("span", { class: "k" }, "🔗 串记 "), boldWords(n.c)) : null,
+      n && n.q ? el("div", null, el("span", { class: "k" }, "❓ 疑问 "), n.q,
+        el("small", { class: "q-st" }, isAnswered(key(w), n.q) ? " ✓ AI 已解答" : " ⏳ 等 AI 解答")) : null,
+      ans.map(function (x) {
+        return el("div", { class: "ai-ans" }, el("div", { class: "k" }, "🤖 AI 解答" + (x.q ? "：" + x.q : "")), boldWords(x.a || ""));
+      }),
       others.map(function (o) { return el("div", { class: "muted" }, el("span", { class: "k" }, "🔗 也在串记里 (" + o.k + ") "), boldWords(o.c)); }));
   }
   function noteBtn(w) {
@@ -241,26 +256,27 @@
     var s = area("n-s", n.s, "✍ 用 " + w.en + " 造一个自己的句子 Your own sentence…");
     var nt = area("n-n", n.n, "💬 备注：用法、搭配、易混词… Note: usage, collocations…");
     var c = area("n-c", n.c, "🔗 一句话串记：把几个单词串成一句话，例如 I estimate the crop will cope with the harm.");
+    var q = area("n-q", n.q, "❓ 有疑问？写下来，之后让 AI 帮你查。例如：chief 和 achieve 有什么关系？");
     var sync = el("input", { type: "checkbox", checked: l ? !!l.sync : true });
     function close() { noteOpen = null; render(); }
     return el("div", { class: "note-edit" },
       el("div", { class: "note-h" }, "📝 我的笔记 My notes — " + w.en),
-      s, nt, c,
+      s, nt, c, q,
       el("label", { class: "check" }, sync, "☁ 同步到 GitHub（手机、电脑都能看到）Sync to GitHub"),
-      gh.token ? null : el("p", { class: "muted" }, "还没连接 GitHub：先保存在本机，到页面最下面「☁ 笔记同步」粘贴钥匙后会自动上传。"),
+      gh.token ? null : el("p", { class: "muted" }, "还没连接 GitHub：先保存在本机，到页面最下面「☁ 同步」粘贴钥匙后会自动上传。"),
       el("div", { class: "tools" },
         el("button", { class: "btn primary", type: "button", onclick: function () {
-          saveNote(w, { s: s.value.trim(), n: nt.value.trim(), c: c.value.trim(), sync: sync.checked }); close(); syncNotes();
+          saveNote(w, { s: s.value.trim(), n: nt.value.trim(), c: c.value.trim(), q: q.value.trim(), sync: sync.checked }); close(); syncNotes();
         } }, "💾 保存 Save"),
         el("button", { class: "btn", type: "button", onclick: close }, "✕ 取消 Cancel"),
         hasText(n) ? el("button", { class: "btn", type: "button", onclick: function () {
           if (!confirm("删除这个词的笔记？Delete this note?")) return;
-          saveNote(w, { s: "", n: "", c: "", sync: !!(remoteNotes[k] || (l && (l.sync || l.synced))) }); close(); syncNotes();
+          saveNote(w, { s: "", n: "", c: "", q: "", sync: !!(remoteNotes[k] || (l && (l.sync || l.synced))) }); close(); syncNotes();
         } }, "🗑 删除 Delete") : null));
   }
   function saveNote(w, v) {
     var k = key(w), old = notes[k] || {};
-    var n = { s: v.s, n: v.n, c: v.c, sync: v.sync, t: new Date().toISOString(), synced: old.synced || null };
+    var n = { s: v.s, n: v.n, c: v.c, q: v.q || "", sync: v.sync, t: new Date().toISOString(), synced: old.synced || null };
     if (!hasText(n) && !n.synced && !remoteNotes[k]) delete notes[k]; // nothing anywhere to remove
     else notes[k] = n;
     store.set("notes", notes);
@@ -298,7 +314,7 @@
       todo.forEach(function (k) {
         var n = notes[k], r = file.notes[k];
         if (r && (r.t || "") > (n.t || "")) return; // the repo has a newer edit from another device
-        if (n.sync && hasText(n)) { file.notes[k] = { s: n.s, n: n.n, c: n.c, t: n.t }; changed++; }
+        if (n.sync && hasText(n)) { file.notes[k] = { s: n.s, n: n.n, c: n.c, q: n.q || "", t: n.t }; changed++; }
         else if (r) { delete file.notes[k]; changed++; }
       });
       if (!changed) return null;
@@ -1259,6 +1275,44 @@
 
       el("div", { class: "tools" }, copyBtn),
       el("p", { class: "muted" }, "Copy the summary and paste it into any AI chat for a deeper analysis. 复制后粘贴给任何 AI，可以得到更详细的分析。")));
+    add(app, renderQuestions());
+  }
+
+  // ❓ all open questions in one place + a text to paste into any AI (it answers into the repo, see AGENTS.md)
+  function renderQuestions() {
+    var open = openQuestions();
+    var answered = [];
+    noteKeys().concat(Object.keys(answers)).forEach(function (k) {
+      answersFor(k).forEach(function (x) { if (answered.every(function (y) { return y.x !== x; })) answered.push({ k: k, x: x }); });
+    });
+    answered.sort(function (a, b) { return String(b.x.date || "") < String(a.x.date || "") ? -1 : 1; });
+    function wordLabel(k) { var w = byKeyAll[k]; return w ? w.en + "（" + w.zh + "）" : k; }
+    function aiText() {
+      return ["请按这个仓库 AGENTS.md 里「Answering the learner's questions」的步骤，解答我背单词时记下的疑问，并把答案提交到仓库：",
+        "https://github.com/" + REPO, "", "我的疑问："]
+        .concat(open.map(function (o) { return "- " + wordLabel(o.k) + "：" + o.q; })).join("\n");
+    }
+    var btn = el("button", { class: "btn primary", type: "button", onclick: function () {
+      var text = aiText();
+      var done = function () { btn.textContent = "✓ 已复制 Copied"; setTimeout(function () { btn.textContent = "📋 复制给 AI 解答 Copy for AI"; }, 2000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { prompt("Copy 复制:", text); });
+      else prompt("Copy 复制:", text);
+    } }, "📋 复制给 AI 解答 Copy for AI");
+    return el("section", { class: "card questions" },
+      el("h3", { class: "setup-h" }, "❓ 我的疑问 Questions for AI（" + open.length + " 个待解答）"),
+      el("p", { class: "muted" }, "练习时点「📝 写笔记」，在「❓ 疑问」里写下想不通的地方（比如两个词有没有关系）。" +
+        "攒几个以后，点下面的按钮复制，粘贴给任何 AI（Claude、ChatGPT…）。AI 会查真实词源，把答案写进仓库，" +
+        "约 1 分钟后答案就出现在这个词的笔记里（🤖 AI 解答）。"),
+      open.length ? el("ul", { class: "list" }, open.map(function (o) {
+        return el("li", null, el("b", null, wordLabel(o.k)), "：" + o.q,
+          o.n && notes[o.k] && !notes[o.k].sync ? el("small", { class: "muted" }, "（只在本机，没同步 — 复制的文字里已经包含）") : null);
+      })) : el("p", { class: "muted" }, "现在没有待解答的疑问。"),
+      open.length ? el("div", { class: "tools" }, btn) : null,
+      answered.length ? [el("h4", null, "🤖 已解答 Answered（" + answered.length + "）"),
+        el("ul", { class: "list" }, answered.slice(0, 20).map(function (o) {
+          return el("li", null, el("b", null, wordLabel(o.k)), o.x.q ? "：" + o.x.q : "",
+            el("div", { class: "ai-ans" }, boldWords(o.x.a || "")));
+        }))] : null);
   }
 
   // ---------- start ----------
@@ -1271,6 +1325,7 @@
     days.slice().reverse().forEach(function (d) { d.words.forEach(function (w) { if (!wordSet[key(w)]) wordSet[key(w)] = d; }); });
     allWords.forEach(function (w) { byKeyAll[key(w)] = w; });
     remoteNotes = data.notes || {};
+    answers = data.answers || {};
     // Newest set if it has unlearned words, else today's review if anything is due, else newest set.
     var newest = days[0];
     var newestHasNew = newest && newest.words.some(function (w) { return !srs[key(w)]; });

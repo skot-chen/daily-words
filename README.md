@@ -37,3 +37,6 @@ See [AGENTS.md](AGENTS.md). `npm run check` validates + builds, `npm run dev` pr
 - **安卓（Chrome）**：打开网站 → 右上角 ⋮ → 「添加到主屏幕 / 安装应用」。
 
 从桌面图标打开是全屏的，没有网络时也能打开上次看过的单词（进度和笔记都在手机里）。
+
+## ❓ 疑问 → 🤖 AI 解答
+练习时点「📝 写笔记」，在「❓ 疑问」里写下想不通的地方。到「📊 总结」页最下面「❓ 我的疑问」，点「📋 复制给 AI 解答」，粘贴给任何 AI。AI 按 AGENTS.md 把答案写进 `answers/answers.json`，约 1 分钟后答案出现在这个词的笔记里。

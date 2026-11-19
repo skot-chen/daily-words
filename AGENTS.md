@@ -9,7 +9,7 @@ That is the whole job. GitHub Actions validates the file and publishes the websi
 - Learner: Chinese native speaker, English level B1–B2.
 
 ## Rules (do not break)
-1. **Only add files in `words/`.** Do not edit `index.html`, `app.js`, `style.css`, `scripts/`, `.github/` or old word files
+1. **Only add files in `words/`** (and, when asked to answer questions, edit `answers/answers.json`). Do not edit `index.html`, `app.js`, `style.css`, `scripts/`, `.github/` or old word files
    unless the user explicitly asks you to fix something in them.
 2. **One new file per batch**, named `words/YYYY-MM-DD.json` (the date the user gives the words, local time
    Asia/Shanghai unless the user says otherwise). If that file already exists, use `words/YYYY-MM-DD-2.json`, then `-3`, …
@@ -23,7 +23,7 @@ That is the whole job. GitHub Actions validates the file and publishes the websi
    (see "Word-root rules"). **Never invent etymology.** If a word truly has no usable real root (short Germanic words
    like seek, harm, crop), write `"no_roots": "reason in Chinese"` instead (optionally plus a `mnemonic`).
    The build **fails** if a word has none of `roots` / `hook` / `no_roots`.
-7. **Never edit `notes/`.** `notes/notes.json` holds the learner's own notes (my sentence / note / 一句话串记),
+7. **Never edit `notes/`.** `notes/notes.json` holds the learner's own notes (my sentence / note / 一句话串记 / ❓ question),
    written by the website's "☁ Sync to GitHub" with commits named "Update my notes (N)". If a push is rejected
    because of such a commit, just `git pull --rebase` and push again — your word file and the notes never conflict.
 
@@ -91,6 +91,37 @@ The learner remembers better through **real** word families. Wrong etymology is 
   cognate in `hook` is fine (raise ↔ rise).
 - If you want to give a pure memory trick, put it in `mnemonic`, never in `roots`/`hook`.
 - Keep each field one short line of simple Chinese; no academic terms (no "PIE", "Grimm's law").
+
+## Answering the learner's questions (❓ → 🤖)
+The learner writes questions about words while practising (e.g. "chief 和 achieve 有什么关系？"). They are in
+`notes/notes.json` as the field `"q"` of a word's note, and/or pasted to you in the chat. Your job when asked:
+1. Collect the questions: those pasted to you **plus** every note in `notes/notes.json` whose `q` has no answer yet
+   (no entry in `answers/answers.json` for that word with the same `q`).
+2. Research each one carefully. Same standard as "Word-root rules": **real etymology only** (Etymonline / Oxford level).
+   If two words are NOT related, say so clearly and explain why they look alike — that is a good answer too.
+   Help memory: show the shared root, 2–4 real family words, and one short example sentence if useful.
+3. Write the answers to **`answers/answers.json`** (create it if missing; never delete old answers; `notes/` stays untouched):
+```json
+{
+  "version": 1,
+  "answers": {
+    "chief": [
+      {
+        "q": "chief 和 achieve 有什么关系？",
+        "a": "有关系！两个词都来自拉丁语 caput（头）。chief = 头领；achieve = a-（到）+ chief（头）→「做到头」→ 完成、实现。同族：captain 船长、capital 首都。",
+        "date": "2026-11-19",
+        "by": "Claude"
+      }
+    ]
+  }
+}
+```
+   - Key = the word's `en`, lowercased. `q` = copy the learner's question **exactly** (the site uses it to mark the question as answered).
+   - `a` = simple Chinese (the learner is B1–B2), English words as they are, 2–5 short sentences. No academic terms.
+   - A question that is about several words: put the answer under the word the note belongs to.
+4. Commit `Answer questions YYYY-MM-DD (N)` to `main`, check the Actions run is green, and tell the user in simple Chinese
+   what you found. If an answer shows that a word's `roots`/`hook` in `words/*.json` is wrong, do not change the
+   word file yourself — tell the user and ask.
 
 ## How to commit
 Any of these works:

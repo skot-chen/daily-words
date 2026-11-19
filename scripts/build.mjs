@@ -71,10 +71,32 @@ if (fs.existsSync(notesFile)) {
     for (const [k, v] of Object.entries(n)) {
       if (!v || typeof v !== "object") continue;
       const clean = {};
-      for (const f of ["s", "n", "c", "t"]) if (typeof v[f] === "string" && v[f].trim()) clean[f] = v[f].trim();
-      if (clean.s || clean.n || clean.c) notes[k.trim().toLowerCase()] = clean;
+      for (const f of ["s", "n", "c", "q", "t"]) if (typeof v[f] === "string" && v[f].trim()) clean[f] = v[f].trim();
+      if (clean.s || clean.n || clean.c || clean.q) notes[k.trim().toLowerCase()] = clean;
     }
   } catch (e) { warnings.push(`notes/notes.json: invalid JSON, notes skipped – ${e.message}`); }
+}
+
+// answers/answers.json = AI answers to the learner's ❓ questions: { version: 1, answers: { word: [ { q, a, date } ] } }.
+let answers = {};
+const answersFile = path.join(root, "answers", "answers.json");
+if (fs.existsSync(answersFile)) {
+  let a = null;
+  try { a = JSON.parse(fs.readFileSync(answersFile, "utf8").replace(/^\uFEFF/, "")); }
+  catch (e) { errors.push(`answers/answers.json: invalid JSON – ${e.message}`); }
+  if (a) {
+    for (const [k, list] of Object.entries(a.answers || {})) {
+      if (!Array.isArray(list)) { errors.push(`answers/answers.json: "${k}" must be a list of { q, a, date }`); continue; }
+      const clean = [];
+      list.forEach((x, i) => {
+        if (!x || typeof x.a !== "string" || !x.a.trim()) { errors.push(`answers/answers.json: "${k}"[${i}] needs "a" (the answer)`); return; }
+        const c = { a: x.a.trim() };
+        for (const f of ["q", "date", "by"]) if (typeof x[f] === "string" && x[f].trim()) c[f] = x[f].trim();
+        clean.push(c);
+      });
+      if (clean.length) answers[k.trim().toLowerCase()] = clean;
+    }
+  }
 }
 
 for (const w of warnings) console.log("WARNING " + w);
@@ -95,7 +117,7 @@ for (const f of ["style.css", "app.js"]) {
   html = html.replace(new RegExp('(href|src)="' + f.replace(".", "\.") + '"'), '$1="' + f + "?v=" + v + '"');
 }
 fs.writeFileSync(path.join(outDir, "index.html"), html);
-fs.writeFileSync(path.join(outDir, "data.json"), JSON.stringify({ built: new Date().toISOString(), days, notes }));
+fs.writeFileSync(path.join(outDir, "data.json"), JSON.stringify({ built: new Date().toISOString(), days, notes, answers }));
 fs.writeFileSync(path.join(outDir, ".nojekyll"), "");
 const total = days.reduce((n, d) => n + d.words.length, 0);
-console.log(`OK: ${days.length} set(s), ${total} words, ${Object.keys(notes).length} note(s), ${warnings.length} warning(s) -> _site/`);
+console.log(`OK: ${days.length} set(s), ${total} words, ${Object.keys(notes).length} note(s), ${Object.keys(answers).length} answered word(s), ${warnings.length} warning(s) -> _site/`);
